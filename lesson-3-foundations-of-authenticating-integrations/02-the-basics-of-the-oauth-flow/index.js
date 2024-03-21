@@ -24,6 +24,30 @@ app.use(session({
 }));
 
 // * 1. Send user to authorization page. This kicks off initial requeset to OAuth server.
+
+app.get('/', async (req, res) => {
+    if (isAuthorized(req.sessionID)) {
+        const accessToken = tokenStore[req.sessionID];
+        const headers = {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+        };
+        const contacts = `https://api.hubapi.com/crm/v3/objects/contacts`;
+        try {
+            const resp = await axios.get(contacts, { headers });
+            const data = resp.data;
+            res.render('home', {
+                token: accessToken,
+                contacts: data.results
+            });
+        } catch (error) {
+            console.error(error);
+        }
+    } else {
+        res.render('home', { authUrl });
+    }
+});
+
 // * 2. Get temporary authorization code from OAuth server.
 // * 3. Combine temporary auth code wtih app credentials and send back to OAuth server.
 // * 4. Get access and refresh tokens.
